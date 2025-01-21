@@ -9,11 +9,12 @@ const btnS = document.querySelector("#S");
 
 const loaderGltf = new GLTFLoader();
 const modelPath = "./assets/eye01.glb";
+const occluderPath = "./assets/head_occluder_01.glb";
 
 // const loaderAudio = new THREE.AudioLoader();
 // const audioPath = "./assets/meow.mp3";
 
-let model;
+let model, occluder;
 // , animations, mixer, audio, listener;
 async function startMindAR() {
   const mindAR = new MindARThree({
@@ -37,15 +38,37 @@ async function startMindAR() {
     });
   });
   model = gltf.scene;
-  console.log(model);
   const anchorEye = mindAR.addAnchor(168);
   anchorEye.group.add(model);
   let size = 0.125;
-  // let size = 0.15;
   model.scale.set(size, size, size);
-  // animations = gltf.animations;
   
+  const gltfOccluder = await new Promise((resolve) => {
+    loaderGltf.load(occluderPath, (gltf) => {
+      resolve(gltf);
+    });
+  });
+  occluder = gltfOccluder.scene;
+  const occluderMat = new THREE.MeshStandardMaterial({
+    transparent: true,
+    opacity: 0.25
+    // colorWrite: false
+  });
+  occluder.traverse((child) => {
+    if (child.isMesh) {
+      child.material = occluderMat;
+    }
+  });
+  const anchorOccluder = mindAR.addAnchor(168);
+  anchorOccluder.group.add(occluder);
+  let sizeOccluder = 0.125;
+  occluder.scale.set(sizeOccluder, sizeOccluder, sizeOccluder);
+  occluder.position.set(0, -0.5, 0);
 
+
+
+
+  // animations = gltf.animations;
   // mixer = new THREE.AnimationMixer(model);
   // const action = mixer.clipAction(animations[0]);
   // action.play();
