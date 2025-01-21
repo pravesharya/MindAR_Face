@@ -4,30 +4,30 @@ import { TextureLoader } from "three";
 import { MindARThree } from "mindAR";
 
 // const canvas = document.querySelector("#canvas");
-const btnF = document.querySelector("#F");
-const btnC = document.querySelector("#C");
+// const btnF = document.querySelector("#F");
+// const btnC = document.querySelector("#C");
 const btnS = document.querySelector("#S");
 
 // const loaderGltf = new GLTFLoader();
 // const modelPath = "./assets/eye01.glb";
-
-const textureLoader = new THREE.TextureLoader();
-const maskPath = "./assets/myMask00.png";
 // const occluderPath = "./assets/head_occluder_01.glb";
 
 // const loaderAudio = new THREE.AudioLoader();
 // const audioPath = "./assets/meow.mp3";
 
-let model, occluder;
+let maskPath, count = 0;
+const textureLoader = new THREE.TextureLoader();
+
+let model, occluder, mindAR, faceMesh, maskTexture;
 async function startMindAR() {
-  const mindAR = new MindARThree({
+  mindAR = new MindARThree({
     container: document.body,
   });
   const { renderer, camera, scene } = mindAR;
-  
+
   const light = new THREE.HemisphereLight(0xffffff, 10);
   scene.add(light);
-  
+
   // const geometry = new THREE.SphereGeometry(0.1, 32, 32);
   // const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   // const sphere = new THREE.Mesh(geometry, material);
@@ -46,7 +46,7 @@ async function startMindAR() {
   // let size = 0.125;
   // model.scale.set(size, size, size);
   // model.position.set(0,-0.1,-0.05);
-  
+
   // const gltfOccluder = await new Promise((resolve) => {
   //   loaderGltf.load(occluderPath, (gltf) => {
   //     resolve(gltf);
@@ -67,10 +67,9 @@ async function startMindAR() {
   // occluder.scale.set(sizeOccluder, sizeOccluder, sizeOccluder);
   // occluder.position.set(0, -0.5, 0);
 
-
-  const faceMesh = mindAR.addFaceMesh();
-  const maskTexture = textureLoader.load(maskPath);
-  console.log(maskTexture);
+  maskPath = `./assets/myMask0${count}.png`;
+  faceMesh = mindAR.addFaceMesh();
+  maskTexture = textureLoader.load(maskPath);
   faceMesh.material.map = maskTexture;
   faceMesh.material.transparent = true;
   faceMesh.material.needsUpdate = true;
@@ -84,12 +83,17 @@ async function startMindAR() {
 }
 startMindAR();
 
-btnF.addEventListener("click", () => {
-  console.log("Filters");
-});
-btnC.addEventListener("click", () => {
-  console.log("Capture");
-});
+// btnF.addEventListener("click", () => {
+//   console.log("Filters");
+// });
+// btnC.addEventListener("click", () => {
+//   console.log("Capture");
+// });
+
 btnS.addEventListener("click", () => {
   console.log("Switch");
+  count === 0 ? (count = 1) : (count = 0);
+  maskPath = `./assets/myMask0${count}.png`;
+  maskTexture = textureLoader.load(maskPath);
+  faceMesh.material.map = maskTexture;
 });
