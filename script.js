@@ -93,7 +93,7 @@ btnF1.addEventListener("click", () => {
 });
 btnF2.addEventListener("click", () => {
   if(is3D) resetFilter3D();
-  setMask2D(1);
+  setMask2D(2);
 });
 btnF3.addEventListener("click", () => {
   if(is3D) resetFilter3D();
