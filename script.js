@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { TextureLoader } from "three";
 // import { GLTFLoader } from "GLTFLoader";
 import { MindARThree } from "mindAR";
 
@@ -10,6 +9,12 @@ let height = window.innerHeight;
 const btnF = document.querySelector("#F");
 const btnC = document.querySelector("#C");
 const btnS = document.querySelector("#S");
+const filters = document.querySelector("#filters");
+const btnF1 = document.querySelector("#f1");
+const btnF2 = document.querySelector("#f2");
+const btnF3 = document.querySelector("#f3");
+const btnF4 = document.querySelector("#f4");
+const formDiv = document.querySelector("#formDiv");
 
 // const loaderGltf = new GLTFLoader();
 // const modelPath = "./assets/eye01.glb";
@@ -18,11 +23,13 @@ const btnS = document.querySelector("#S");
 // const loaderAudio = new THREE.AudioLoader();
 // const audioPath = "./assets/meow.mp3";
 
-let maskPath,
-  count = 0;
-const textureLoader = new THREE.TextureLoader();
+let maskPath, filtersVisible, count;
+filtersVisible = false;
+count = 1;
 
+const textureLoader = new THREE.TextureLoader();
 let model, occluder, mindAR, faceMesh, maskTexture, screenCapture;
+
 async function startMindAR() {
   mindAR = new MindARThree({
     container: document.body,
@@ -72,7 +79,7 @@ async function startMindAR() {
   // occluder.scale.set(sizeOccluder, sizeOccluder, sizeOccluder);
   // occluder.position.set(0, -0.5, 0);
 
-  maskPath = `./assets/myMask0${count}.png`;
+  maskPath = `./assets/myMask${count}.png`;
   faceMesh = mindAR.addFaceMesh();
   maskTexture = textureLoader.load(maskPath);
   faceMesh.material.map = maskTexture;
@@ -90,11 +97,14 @@ startMindAR();
 
 btnF.addEventListener("click", () => {
   console.log("Filters");
-  count === 0 ? (count = 1) : (count = 0);
-  maskPath = `./assets/myMask0${count}.png`;
-  maskTexture = textureLoader.load(maskPath);
-  faceMesh.material.map = maskTexture;
+  if (filtersVisible) {
+    filters.style.top = "-100vh";
+  } else {
+    filters.style.top = "10vh";
+  }
+  filtersVisible ? (filtersVisible = false) : (filtersVisible = true);
 });
+
 btnC.addEventListener("click", () => {
   console.log("Capture");
   capture();
@@ -104,6 +114,19 @@ btnC.addEventListener("click", () => {
 btnS.addEventListener("click", () => {
   console.log("Switch Camera");
   mindAR.switchCamera();
+});
+
+btnF1.addEventListener("click", () => {
+  updateFilter(1);
+});
+btnF2.addEventListener("click", () => {
+  updateFilter(2);
+});
+btnF3.addEventListener("click", () => {
+  updateFilter(3);
+});
+btnF4.addEventListener("click", () => {
+  updateFilter(4);
 });
 
 function capture() {
@@ -161,4 +184,65 @@ function shareCapture() {
   } else {
     console.error("Web Share API not supported in this browser.");
   }
+}
+
+function updateFilter(filter) {
+  switch (filter) {
+    case 1:
+      count = 1;
+      resetMask(count);
+      break;
+    case 2:
+      count = 1;
+      resetMask(count);
+      break;
+    case 3:
+      checkPin(6969, 3);
+      break;
+    case 4:
+      checkPin(6969, 4);
+      break;
+    default:
+      count = 1;
+  }
+}
+
+function resetMask(count) {
+  maskPath = `./assets/myMask${count}.png`;
+  maskTexture = textureLoader.load(maskPath);
+  faceMesh.material.map = maskTexture;
+}
+
+function checkPin(pin, count) {
+  const form = document.createElement("form");
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = 4;
+  input.pattern = "\\d{4}";
+  input.placeholder = "Enter 4 digit code";
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  submit.textContent = "Submit";
+
+  form.appendChild(input);
+  form.appendChild(submit);
+  formDiv.appendChild(form);
+  formDiv.style.display = "block";
+  // document.body.appendChild(form);
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const userInput = input.value;
+    if (userInput == pin) {
+      console.log("Correct Pin");
+      formDiv.removeChild(form);
+      formDiv.style.display = "none";
+      resetMask(count);
+    } else {
+      alert("Incorrect Pin ! Try again...");
+      input.value = "";
+    }
+  });
 }
