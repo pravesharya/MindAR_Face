@@ -1,5 +1,5 @@
 import * as THREE from "three";
-// import { GLTFLoader } from "GLTFLoader";
+import { GLTFLoader } from "GLTFLoader";
 import { MindARThree } from "mindAR";
 
 let width = window.innerWidth;
@@ -10,82 +10,44 @@ const btnF = document.querySelector("#F");
 const btnC = document.querySelector("#C");
 const btnS = document.querySelector("#S");
 const filters = document.querySelector("#filters");
+const btnF0 = document.querySelector("#f0");
 const btnF1 = document.querySelector("#f1");
 const btnF2 = document.querySelector("#f2");
 const btnF3 = document.querySelector("#f3");
 const btnF4 = document.querySelector("#f4");
 const formDiv = document.querySelector("#formDiv");
 
-// const loaderGltf = new GLTFLoader();
-// const modelPath = "./assets/eye01.glb";
-// const occluderPath = "./assets/head_occluder_01.glb";
-
-// const loaderAudio = new THREE.AudioLoader();
-// const audioPath = "./assets/meow.mp3";
-
-let maskPath, filtersVisible, count;
-filtersVisible = false;
-count = 1;
-
+const gltfLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
-let model, occluder, mindAR, faceMesh, maskTexture, screenCapture;
+
+const modelPath = "./assets/eye0.glb";
+const occluderPath = "./assets/head_occluder.glb";
+
+let filtersVisible, form, formExist, is3D, screenShot;
+filtersVisible = formExist = false;
+is3D = true;
+
+let mindAR, renderer, camera, scene;
+let occluder, occluderAnchor, model, modelAnchor;
+let faceMesh, maskPath, maskTexture, count;
+count = 1;
 
 async function startMindAR() {
   mindAR = new MindARThree({
     container: document.body,
   });
-  const { renderer, camera, scene } = mindAR;
+
+  ({ renderer, camera, scene } = mindAR);
   renderer.setSize(width, height);
 
   const light = new THREE.HemisphereLight(0xffffff, 10);
   scene.add(light);
 
-  // const geometry = new THREE.SphereGeometry(0.1, 32, 32);
-  // const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  // const sphere = new THREE.Mesh(geometry, material);
-  // const anchorNose = mindAR.addAnchor(1);
-  // anchorNose.group.add(sphere);
+  modelAnchor = mindAR.addAnchor(168); // 3D model anchor
+  faceMesh = mindAR.addFaceMesh(); // 2D mask
 
-  // Wait for model to load
-  // const gltf = await new Promise((resolve) => {
-  //   loaderGltf.load(modelPath, (gltf) => {
-  //     resolve(gltf);
-  //   });
-  // });
-  // model = gltf.scene;
-  // const anchorEye = mindAR.addAnchor(168);
-  // anchorEye.group.add(model);
-  // let size = 0.125;
-  // model.scale.set(size, size, size);
-  // model.position.set(0,-0.1,-0.05);
-
-  // const gltfOccluder = await new Promise((resolve) => {
-  //   loaderGltf.load(occluderPath, (gltf) => {
-  //     resolve(gltf);
-  //   });
-  // });
-  // occluder = gltfOccluder.scene;
-  // const occluderMat = new THREE.MeshStandardMaterial({
-  //   colorWrite: false
-  // });
-  // occluder.traverse((child) => {
-  //   if (child.isMesh) {
-  //     child.material = occluderMat;
-  //   }
-  // });
-  // const anchorOccluder = mindAR.addAnchor(168);
-  // anchorOccluder.group.add(occluder);
-  // let sizeOccluder = 0.125;
-  // occluder.scale.set(sizeOccluder, sizeOccluder, sizeOccluder);
-  // occluder.position.set(0, -0.5, 0);
-
-  maskPath = `./assets/myMask${count}.png`;
-  faceMesh = mindAR.addFaceMesh();
-  maskTexture = textureLoader.load(maskPath);
-  faceMesh.material.map = maskTexture;
-  faceMesh.material.transparent = true;
-  faceMesh.material.needsUpdate = true;
-  scene.add(faceMesh);
+  setOcculuder();
+  setMask3D();
 
   await mindAR.start();
 
@@ -99,10 +61,15 @@ btnF.addEventListener("click", () => {
   console.log("Filters");
   if (filtersVisible) {
     filters.style.top = "-100vh";
+    if(formExist){
+      formDiv.removeChild(form);
+      formDiv.style.display = "none";
+      formExist = false;
+    } 
   } else {
     filters.style.top = "10vh";
   }
-  filtersVisible ? (filtersVisible = false) : (filtersVisible = true);
+  filtersVisible = !filtersVisible;
 });
 
 btnC.addEventListener("click", () => {
@@ -116,17 +83,35 @@ btnS.addEventListener("click", () => {
   mindAR.switchCamera();
 });
 
+btnF0.addEventListener("click", () => {
+  resetFilter2D();
+  setMask3D();
+});
 btnF1.addEventListener("click", () => {
-  updateFilter(1);
+  if(is3D) resetFilter3D();
+  setMask2D(1);
 });
 btnF2.addEventListener("click", () => {
-  updateFilter(2);
+  if(is3D) resetFilter3D();
+  setMask2D(1);
 });
 btnF3.addEventListener("click", () => {
-  updateFilter(3);
+  if(is3D) resetFilter3D();
+  if (formExist) {
+    formDiv.removeChild(form);
+    formDiv.style.display = "none";
+    formExist = false;
+  }
+  checkPin(6969, 3);
 });
 btnF4.addEventListener("click", () => {
-  updateFilter(4);
+  if(is3D) resetFilter3D();
+  if (formExist) {
+    formDiv.removeChild(form);
+    formDiv.style.display = "none";
+    formExist = false;
+  }
+  checkPin(6969, 4);
 });
 
 function capture() {
@@ -160,7 +145,7 @@ function capture() {
 
   const link = document.createElement("a");
   link.href = canvasB.toDataURL("image/png");
-  screenCapture = canvasB.toDataURL("image/png");
+  screenShot = canvasB.toDataURL("image/png");
   link.download = "capture.png";
   link.click();
 }
@@ -171,9 +156,7 @@ function shareCapture() {
       .share({
         title: "Screen Capture",
         text: "Check out this screen capture!",
-        files: [
-          new File([screenCapture], "capture.png", { type: "image/png" }),
-        ],
+        files: [new File([screenShot], "capture.png", { type: "image/png" })],
       })
       .then(() => {
         console.log("Share successful");
@@ -186,35 +169,68 @@ function shareCapture() {
   }
 }
 
-function updateFilter(filter) {
-  switch (filter) {
-    case 1:
-      count = 1;
-      resetMask(count);
-      break;
-    case 2:
-      count = 1;
-      resetMask(count);
-      break;
-    case 3:
-      checkPin(6969, 3);
-      break;
-    case 4:
-      checkPin(6969, 4);
-      break;
-    default:
-      count = 1;
-  }
+async function setOcculuder() {
+  const occluderGLTF = await new Promise((resolve) => {
+    gltfLoader.load(occluderPath, (gltf) => {
+      resolve(gltf);
+    });
+  });
+  occluder = occluderGLTF.scene;
+  const occluderMat = new THREE.MeshStandardMaterial({
+    colorWrite: false,
+  });
+  occluder.traverse((child) => {
+    if (child.isMesh) {
+      child.material = occluderMat;
+    }
+  });
+  occluderAnchor = mindAR.addAnchor(168);
+  occluderAnchor.group.add(occluder);
+  let size = 0.125;
+  occluder.scale.set(size, size, size);
+  occluder.position.set(0, -0.5, 0);
 }
 
-function resetMask(count) {
+function resetFilter2D() {
+  scene.remove(faceMesh);
+  is3D = true;
+  console.log("2D removed");
+}
+
+function resetFilter3D() {
+  modelAnchor.group.remove(model);
+  is3D = false;
+  console.log("3D removed");
+}
+
+function setMask2D(count) {
   maskPath = `./assets/myMask${count}.png`;
   maskTexture = textureLoader.load(maskPath);
   faceMesh.material.map = maskTexture;
+  faceMesh.material.transparent = true;
+  faceMesh.material.needsUpdate = true;
+  scene.add(faceMesh);
+  is3D = false;
+}
+
+async function setMask3D() {
+  const modelGLTF = await new Promise((resolve) => {
+    gltfLoader.load(modelPath, (gltf) => {
+      resolve(gltf);
+    });
+  });
+  model = modelGLTF.scene;
+  // modelAnchor = mindAR.addAnchor(168);
+  modelAnchor.group.add(model);
+  let size = 0.125;
+  model.scale.set(size, size, size);
+  model.position.set(0, -0.05, -0.25);
+  is3D = true;
 }
 
 function checkPin(pin, count) {
-  const form = document.createElement("form");
+  formExist = true;
+  form = document.createElement("form");
   form.style.display = "flex";
   form.style.flexDirection = "column";
   const input = document.createElement("input");
@@ -225,12 +241,14 @@ function checkPin(pin, count) {
   const submit = document.createElement("button");
   submit.type = "submit";
   submit.textContent = "Submit";
+  const close = document.createElement("button");
+  close.textContent = "[X]";
 
   form.appendChild(input);
   form.appendChild(submit);
+  form.appendChild(close);
   formDiv.appendChild(form);
   formDiv.style.display = "block";
-  // document.body.appendChild(form);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -239,10 +257,17 @@ function checkPin(pin, count) {
       console.log("Correct Pin");
       formDiv.removeChild(form);
       formDiv.style.display = "none";
-      resetMask(count);
+      formExist = false;
+      setMask2D(count);
     } else {
       alert("Incorrect Pin ! Try again...");
       input.value = "";
     }
+  });
+
+  close.addEventListener("click", () => {
+    formDiv.removeChild(form);
+    formDiv.style.display = "none";
+    formExist = false;
   });
 }
