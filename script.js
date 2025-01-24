@@ -18,10 +18,11 @@ const btnS = document.querySelector("#S");
 // const loaderAudio = new THREE.AudioLoader();
 // const audioPath = "./assets/meow.mp3";
 
-let maskPath, count = 0;
+let maskPath,
+  count = 0;
 const textureLoader = new THREE.TextureLoader();
 
-let model, occluder, mindAR, faceMesh, maskTexture;
+let model, occluder, mindAR, faceMesh, maskTexture, screenCapture;
 async function startMindAR() {
   mindAR = new MindARThree({
     container: document.body,
@@ -97,6 +98,7 @@ btnF.addEventListener("click", () => {
 btnC.addEventListener("click", () => {
   console.log("Capture");
   capture();
+  shareCapture();
 });
 
 btnS.addEventListener("click", () => {
@@ -104,35 +106,59 @@ btnS.addEventListener("click", () => {
   mindAR.switchCamera();
 });
 
-function capture () {
-  const {renderer, video, scene, camera} = mindAR;
-  
+function capture() {
+  const { renderer, video, scene, camera } = mindAR;
+
   const canvasA = renderer.domElement;
-  const canvasB = document.createElement('canvas');
-  const context = canvasB.getContext('2d');
-  
-  console.log(canvasA,video);
+  const canvasB = document.createElement("canvas");
+  const context = canvasB.getContext("2d");
+
+  console.log(canvasA, video);
   canvasB.width = canvasA.width;
   canvasB.height = canvasA.height;
 
-  let aX,aY,aW,aH,bX,bY,bW,bH;
-  aX = aY = aW = aH = bX = bY = bW = bH = 0 ;
+  let aX, aY, aW, aH;
+  aX = aY = aW = aH = 0;
 
-  aX = (video.clientWidth - canvasA.clientWidth) / 2 * (video.videoWidth / video.clientWidth);
-  aY = (video.clientHeight - canvasA.clientHeight) / 2 * (video.videoHeight / video.clientHeight);
+  aX =
+    ((video.clientWidth - canvasA.clientWidth) / 2) *
+    (video.videoWidth / video.clientWidth);
+  aY =
+    ((video.clientHeight - canvasA.clientHeight) / 2) *
+    (video.videoHeight / video.clientHeight);
   aW = video.videoWidth - aX * 2;
   aH = video.videoHeight - aY * 2;
 
-  context.drawImage(video, aX,aY,aW,aH, 0, 0, canvasB.width, canvasB.height);
+  context.drawImage(video, aX, aY, aW, aH, 0, 0, canvasB.width, canvasB.height);
   renderer.preserveDrawingBuffer = true;
   renderer.render(scene, camera);
   context.drawImage(canvasA, 0, 0, canvasA.width, canvasA.height);
   renderer.preserveDrawingBuffer = false;
 
-  const link = document.createElement('a');
-  link.href = canvasB.toDataURL('image/png');
-  link.download = 'capture.png';
+  const link = document.createElement("a");
+  link.href = canvasB.toDataURL("image/png");
+  screenCapture = canvasB.toDataURL("image/png");
+  link.download = "capture.png";
   link.click();
 }
 
-
+function shareCapture() {
+  if (navigator.share) {
+    navigator
+      .share({
+        title: "Screen Capture",
+        text: "Check out this screen capture!",
+        files: [
+          new File([screenCapture], "capture.png", { type: "image/png" }),
+        ],
+      })
+      .then(() => {
+        console.log("Share successful");
+      })
+      .catch((error) => {
+        console.error("Error sharing:", error);
+      });
+  } else {
+    console.error("Web Share API not supported in this browser.");
+  }
+}
