@@ -43,6 +43,10 @@ async function startMindAR() {
   const light = new THREE.HemisphereLight(0xffffff, 10);
   scene.add(light);
 
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  directionalLight.position.set(0, 0.5, 0.5).normalize();
+  scene.add(directionalLight);
+
   modelAnchor = mindAR.addAnchor(168); // 3D model anchor
   faceMesh = mindAR.addFaceMesh(); // 2D mask
 
@@ -233,22 +237,35 @@ function checkPin(pin, count) {
   form = document.createElement("form");
   form.style.display = "flex";
   form.style.flexDirection = "column";
+
   const input = document.createElement("input");
   input.type = "text";
   input.maxLength = 4;
   input.pattern = "\\d{4}";
   input.placeholder = "Enter 4 digit code";
+
   const submit = document.createElement("button");
   submit.type = "submit";
-  submit.textContent = "Submit";
+  submit.textContent = "SUBMIT";
+  
   const close = document.createElement("button");
-  close.textContent = "[X]";
+  close.textContent = "[x]";
 
   form.appendChild(input);
   form.appendChild(submit);
   form.appendChild(close);
   formDiv.appendChild(form);
   formDiv.style.display = "block";
+
+  input.style.backgroundColor = "white";
+  submit.style.backgroundColor = "white";
+  close.style.backgroundColor = "black";
+  input.style.color = "black";
+  submit.style.color = "black";
+  close.style.color = "white";
+  input.style.border = "1px black solid";
+  submit.style.border = "1px black solid";
+  close.style.border = "none";
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
